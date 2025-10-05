@@ -50,7 +50,7 @@ These uncertainties can lead to crop loss, lower productivity, and financial ris
 
 ## Tech Stack
 - **Frontend:** React.js / HTML + CSS + JavaScript  
-- **Backend:** Flask / Django  
+- **Backend:** Flask
 - **Visualization:** Leaflet.js / Mapbox (Maps), Plotly.js / D3.js (Graphs)  
 - **Data Access:** Google Earth Engine, NASA APIs (MODIS, GPM, SMAP, AIRS)  
 - **Optional AI/ML:** Predict bloom & harvest time from NDVI and rainfall data  
@@ -79,4 +79,5 @@ These uncertainties can lead to crop loss, lower productivity, and financial ris
   python app.py
 
 5. Open the frontend dashboard in your browser
+
 
