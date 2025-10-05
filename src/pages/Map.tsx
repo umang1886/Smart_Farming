@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Layers, Calendar, MapPin } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-const layers = [
+import { MapContainer, TileLayer, CircleMarker, Polygon } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+
+const layersConfig = [
   { id: "ndvi", name: "NDVI (Crop Health)", color: "bg-success" },
   { id: "rainfall", name: "Rainfall", color: "bg-primary" },
   { id: "moisture", name: "Soil Moisture", color: "bg-secondary" },
@@ -12,9 +15,14 @@ const layers = [
 ];
 
 export default function Map() {
-  const [activeLayers, setActiveLayers] = useState(["ndvi"]);
+  const [activeLayers, setActiveLayers] = useState<string[]>(["ndvi"]);
   const [viewType, setViewType] = useState<"satellite" | "vector">("satellite");
+  const [ndviTile, setNdviTile] = useState<string | null>(null);
 
+  const lat = 23.0225;
+  const lon = 72.5714;
+
+  // Toggle active layers
   const toggleLayer = (layerId: string) => {
     setActiveLayers((prev) =>
       prev.includes(layerId)
@@ -23,9 +31,31 @@ export default function Map() {
     );
   };
 
+  // Fetch NDVI tile URL from backend
+  const fetchNdviTile = async () => {
+    try {
+      const res = await fetch(`http://127.0.0.1:5000/api/ndvi_tile?lat=${lat}&lon=${lon}`);
+      const data = await res.json();
+      if (data.tile_url) setNdviTile(data.tile_url);
+      console.log("NDVI Tile:", data);
+    } catch (err) {
+      console.error("Error fetching NDVI tile:", err);
+    }
+  };
+
+  // Fetch NDVI tile when layer is active
+  useEffect(() => {
+    if (activeLayers.includes("ndvi")) {
+      fetchNdviTile();
+    } else {
+      setNdviTile(null);
+    }
+  }, [activeLayers]);
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
+        {/* Header */}
         <div className="mb-6">
           <h1 className="text-4xl font-bold mb-2 bg-gradient-hero bg-clip-text text-transparent">
             Interactive Farm Map
@@ -45,11 +75,11 @@ export default function Map() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Layer Toggles */}
+              {/* Layer toggles */}
               <div>
                 <h3 className="text-sm font-semibold mb-3">Data Layers</h3>
                 <div className="space-y-2">
-                  {layers.map((layer) => (
+                  {layersConfig.map((layer) => (
                     <Button
                       key={layer.id}
                       variant={activeLayers.includes(layer.id) ? "default" : "outline"}
@@ -63,7 +93,7 @@ export default function Map() {
                 </div>
               </div>
 
-              {/* View Type */}
+              {/* Base map type */}
               <div>
                 <h3 className="text-sm font-semibold mb-3">View Type</h3>
                 <div className="grid grid-cols-2 gap-2">
@@ -82,7 +112,7 @@ export default function Map() {
                 </div>
               </div>
 
-              {/* Date Picker */}
+              {/* Date picker placeholder */}
               <div>
                 <h3 className="text-sm font-semibold mb-3">Date Range</h3>
                 <Button variant="outline" className="w-full justify-start">
@@ -90,104 +120,44 @@ export default function Map() {
                   Last 30 Days
                 </Button>
               </div>
-
-              {/* Legend */}
-              <div>
-                <h3 className="text-sm font-semibold mb-3">Legend</h3>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span>High</span>
-                    <div className="w-20 h-3 rounded-full bg-gradient-to-r from-success to-success/50" />
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span>Medium</span>
-                    <div className="w-20 h-3 rounded-full bg-gradient-to-r from-warning to-warning/50" />
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span>Low</span>
-                    <div className="w-20 h-3 rounded-full bg-gradient-to-r from-destructive to-destructive/50" />
-                  </div>
-                </div>
-              </div>
             </CardContent>
           </Card>
 
-          {/* Map Display */}
+          {/* Map display */}
           <div className="lg:col-span-3 space-y-6">
             <Card className="animate-fade-in">
               <CardContent className="p-0">
-                <div className="relative w-full h-[600px] rounded-lg overflow-hidden bg-muted">
-                  {/* Placeholder Map */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-success/20 to-secondary/20">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center space-y-4">
-                        <MapPin className="h-16 w-16 mx-auto text-primary animate-pulse" />
-                        <div>
-                          <h3 className="text-xl font-semibold mb-2">
-                            Interactive Map View
-                          </h3>
-                          <p className="text-muted-foreground">
-                            Integrate Mapbox or Leaflet for live satellite imagery
-                          </p>
-                          <div className="mt-4 space-x-2">
-                            {activeLayers.map((layerId) => {
-                              const layer = layers.find((l) => l.id === layerId);
-                              return (
-                                <Badge key={layerId} className={layer?.color}>
-                                  {layer?.name}
-                                </Badge>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    {/* Farm Polygon Overlay */}
-                    <svg className="absolute inset-0 w-full h-full">
-                      <polygon
-                        points="200,150 600,200 550,450 250,400"
-                        fill="rgba(20, 184, 166, 0.2)"
-                        stroke="rgba(20, 184, 166, 0.8)"
-                        strokeWidth="3"
-                        className="animate-pulse-glow"
-                      />
-                      <circle
-                        cx="400"
-                        cy="300"
-                        r="8"
-                        fill="rgb(245, 158, 11)"
-                        className="animate-pulse"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                <MapContainer center={[lat, lon]} zoom={12} style={{ height: "600px", width: "100%" }}>
+                  {/* Base map */}
+                  <TileLayer
+                    url={
+                      viewType === "satellite"
+                        ? "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        : "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png"
+                    }
+                  />
 
-            {/* Farm Info */}
-            <Card className="animate-fade-in">
-              <CardHeader>
-                <CardTitle>Selected Farm Details</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-4 rounded-lg bg-success/10 border border-success/20">
-                    <p className="text-xs text-muted-foreground mb-1">Area</p>
-                    <p className="text-2xl font-bold text-success">12.5 ha</p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
-                    <p className="text-xs text-muted-foreground mb-1">Crop Type</p>
-                    <p className="text-2xl font-bold text-primary">Wheat</p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-secondary/10 border border-secondary/20">
-                    <p className="text-xs text-muted-foreground mb-1">Sowing Date</p>
-                    <p className="text-sm font-semibold text-secondary">Nov 15, 2024</p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-warning/10 border border-warning/20">
-                    <p className="text-xs text-muted-foreground mb-1">Est. Harvest</p>
-                    <p className="text-sm font-semibold text-warning">Apr 10, 2025</p>
-                  </div>
-                </div>
+                  {/* NDVI overlay */}
+                  {ndviTile && <TileLayer url={ndviTile} opacity={0.6} />}
+
+                  {/* Example polygon for farm */}
+                  <Polygon
+                    positions={[
+                      [23.024, 72.569],
+                      [23.028, 72.574],
+                      [23.025, 72.578],
+                      [23.020, 72.576],
+                    ]}
+                    pathOptions={{ color: "green", fillOpacity: 0.3 }}
+                  />
+
+                  {/* Example farm marker */}
+                  <CircleMarker
+                    center={[lat, lon]}
+                    radius={8}
+                    pathOptions={{ color: "orange" }}
+                  />
+                </MapContainer>
               </CardContent>
             </Card>
           </div>
