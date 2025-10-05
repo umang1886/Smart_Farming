@@ -73,10 +73,10 @@ These uncertainties can lead to crop loss, lower productivity, and financial ris
 2. Install dependencies:
    pip install -r requirements.txt
   
-
 3. Set up Google Earth Engine and NASA API credentials
 
 4.Run the backend server:
   python app.py
 
 5. Open the frontend dashboard in your browser
+
